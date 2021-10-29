@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
+    <data-source source="LOCAL" name="Presto - default@presto.apps.eu.idealo.com" uuid="c6dbfb23-7e1b-4252-b3ab-78b9961abe4a">
+      <driver-ref>presto</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>com.facebook.presto.jdbc.PrestoDriver</jdbc-driver>
+      <jdbc-url>jdbc:presto://presto.apps.eu.idealo.com:443/hive/default?SSL=true</jdbc-url>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
+  </component>
+</project>
