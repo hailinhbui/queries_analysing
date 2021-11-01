@@ -5,8 +5,10 @@ nltk.download('punkt')
 from nltk.tokenize import word_tokenize
 from collections import Counter
 import prestodb
+import pickle
 
-def connect_to_presto():
+
+def get_queries():
     conn = prestodb.dbapi.connect(
         host='presto.apps.eu.idealo.com',
         port=443, user='YOUR_USERNAME_HERE',
@@ -16,10 +18,7 @@ def connect_to_presto():
     )
     # create the cursor
     cursor = conn.cursor()
-    return cursor
-
-def get_queries(cur):
-    cur.execute(''' 
+    cursor.execute(''' 
     select * from prod_dl_presto_query_events_prod.dl_presto_events_prod_758373708967_eu_central_1
       where 1=1
         and date(partitioned_date) > date('2021-06-01')
@@ -31,8 +30,8 @@ def get_queries(cur):
       and lower(query) like '%fact_leadouts%'
     limit 10000
     ''')
-    records = cur.fetchall()
-    colnames = [col[0] for col in cur.description]
+    records = cursor.fetchall()
+    colnames = [col[0] for col in cursor.description]
     df = pd.DataFrame(records, columns=colnames)
     return df
 
@@ -77,23 +76,12 @@ def sorting_occurrencies(counter_dict, table_columns):
         sorted_occurencies[w] = occurencies[w]
     return sorted_occurencies
 
-
-def get_table_colums(cur, table_name):
-    cur.execute('''
-    SHOW COLUMNS FROM "dl_dwh_prod".
-    ''' + table_name)
-    records = cur.fetchall()
-    columns_name = []
-    for i in records:
-        columns_name.append(i[0])
-    return columns_name
-
-
 if __name__ == '__main__':
-    cursor = connect_to_presto()
-    query_records = get_queries(cursor)
+    query_records = get_queries()
     table_name = 'fact_leadouts'
-    table_columns = get_table_colums(cursor,table_name)
+    infile = open('table_dict', 'rb')
+    table_dict = pickle.load(infile, encoding='latin1')
+    table_columns = table_dict[table_name]
     # convert the field query into a list
     queries = query_records["query"].values.tolist()
     counter_dict = cleanQueries(queries)
