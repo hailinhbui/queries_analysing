@@ -8,7 +8,7 @@ import prestodb
 import pickle
 
 
-def get_queries():
+def get_query_results():
     conn = prestodb.dbapi.connect(
         host='presto.apps.eu.idealo.com',
         port=443, user='YOUR_USERNAME_HERE',
@@ -77,12 +77,13 @@ def sorting_occurrencies(counter_dict, table_columns):
     return sorted_occurencies
 
 if __name__ == '__main__':
-    query_records = get_queries()
     table_name = 'fact_leadouts'
     infile = open('table_dict', 'rb')
     table_dict = pickle.load(infile, encoding='latin1')
+    infile.close()
     table_columns = table_dict[table_name]
     # convert the field query into a list
+    query_records = get_query_results()
     queries = query_records["query"].values.tolist()
     counter_dict = cleanQueries(queries)
     #showing the unused fields in the table - which are normally empty
