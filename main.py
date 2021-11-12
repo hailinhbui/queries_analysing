@@ -7,8 +7,7 @@ from collections import Counter
 import prestodb
 import pickle
 
-
-def get_query_results():
+def get_queries():
     conn = prestodb.dbapi.connect(
         host='presto.apps.eu.idealo.com',
         port=443, user='YOUR_USERNAME_HERE',
@@ -27,13 +26,14 @@ def get_query_results():
       and lower(query) not like '%from system.%'
       -- Helps ignore the prepared statements (e.g. EXECUTE, ALLOCATE, DEALLOCATE, etc)
       and regexp_like(lower(query), '^(with|select)')
-      and lower(query) like '%fact_leadouts%'
+      and lower(query) like '%isg%'
     limit 10000
     ''')
     records = cursor.fetchall()
     colnames = [col[0] for col in cursor.description]
     df = pd.DataFrame(records, columns=colnames)
-    return df
+    queries = df["query"].values.tolist()
+    return queries
 
 # a list of sql operation that should be removed
 sql_syntax = ['null', 'else', 'or', 'select', 'from', 'where', 'case', 'and', 'join', 'left', 'with', 'between', 'then',
@@ -66,29 +66,27 @@ def cleanQueries(queries):
     counter_dict = dict(counter)  # convert Counter to Dict
     return counter_dict
 
-def sorting_occurrencies(counter_dict, table_columns):
+def sorting_occurrences(counter_dict, table_columns):
     # Using dict()
     # Extracting specific keys from dictionary: selecting the values of fields in leadouts_fields
-    occurencies = dict((k, counter_dict[k]) for k in table_columns if k in counter_dict)
-    sorted_keys = sorted(occurencies, key=occurencies.get)
-    sorted_occurencies = {}
+    occurrences = dict((k, counter_dict[k]) for k in table_columns if k in counter_dict)
+    sorted_keys = sorted(occurrences, key=occurrences.get)
+    sorted_occurrences = {}
     for w in sorted_keys:
-        sorted_occurencies[w] = occurencies[w]
-    return sorted_occurencies
+        sorted_occurrences[w] = occurrences[w]
+    return sorted_occurrences
 
 if __name__ == '__main__':
-    table_name = 'fact_leadouts'
+    table_name = 'isg'
     infile = open('table_dict', 'rb')
     table_dict = pickle.load(infile, encoding='latin1')
-    infile.close()
     table_columns = table_dict[table_name]
-    # convert the field query into a list
-    query_records = get_query_results()
-    queries = query_records["query"].values.tolist()
+    infile.close()
+    # convert queries into a list
+    queries = get_queries()
+    # a dict of all tokens was found in the queries
     counter_dict = cleanQueries(queries)
-    #showing the unused fields in the table - which are normally empty
-    #get_unused_fields = set(leadouts_fields) - set(merged_list)
-    # print(get_unused_fields)
-    sorted_occurencies = sorting_occurrencies(counter_dict, table_columns)
-    for key, value in sorted_occurencies.items():
+    # a sorted dict of how often the column names happen in the query
+    sorted_occurrences = sorting_occurrences(counter_dict, table_columns)
+    for key, value in sorted_occurrences.items():
         print(key, ' : ', value)
